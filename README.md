@@ -27,7 +27,7 @@ devtmpfs、netfilter/NAT 等选项。Droidspaces 依赖这些特性来做进程�
 | 内核版本 | 3.18.140（cgroup **v1**，非 GKI） |
 | defconfig | `m1s1_defconfig`（crDroid device tree 的 `TARGET_KERNEL_CONFIG`） |
 | 内核镜像 | `Image.lz4-dtb` |
-| 编译器 | **Linaro GCC 4.9.4**（3.18 内核用 GCC 9/12 能编译但无法引导） |
+| 编译器 | **Linaro GCC 4.9.4**（3.18 内核用 GCC 9/12 能编译但无法引导）。Linaro 官网下载已下线，脚本从 GitHub 镜像 clone，32 位端用 `arm-linux-gnueabihf-` 前缀 |
 | boot 分区 | A/B 设备：`boot_a` / `boot_b`，路径 `/dev/block/bootdevice/by-name/boot` |
 
 ### 关于 Droidspaces 官方补丁的取舍
@@ -65,7 +65,8 @@ devtmpfs、netfilter/NAT 等选项。Droidspaces 依赖这些特性来做进程�
    - 失败时会额外上传 `build-log`，可据此排查。
 
 > 提示：Actions 里 `ubuntu-22.04` runner 有 2 核 / 7GB 内存，编译 3.18 内核足够。
-> 工具链约 150MB、源码约 1.5GB，会在每次运行时下载（无缓存）。
+> 工具链约 220MB、源码约 1.5GB，会在每次运行时下载（无缓存）。
+> 构建日志会作为 `build-log` artifact 上传（成功/失败都会上传），方便排查。
 
 ### 方式 B：本地 Linux 编译
 
