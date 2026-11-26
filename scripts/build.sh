@@ -32,6 +32,11 @@ ARM32_BRANCH="${ARM32_BRANCH:-master}"
 CROSS_COMPILE="${CROSS_COMPILE:-$AARCH64_TC/bin/aarch64-linux-gnu-}"
 CROSS_COMPILE_ARM32="${CROSS_COMPILE_ARM32:-$ARM32_TC/bin/arm-linux-gnueabihf-}"
 
+# Ubuntu 22.04's host GCC 11 defaults to -fno-common, which breaks dtc linking
+# in this 2016-era kernel (multiple definition of yylloc). Command-line
+# assignment overrides the Makefile's HOSTCFLAGS, so keep the original flags.
+HOST_MAKE_FLAGS=(HOSTCFLAGS="-Wall -Wmissing-prototypes -Wstrict-prototypes -O2 -fomit-frame-pointer -std=gnu89 -fcommon")
+
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; NC='\033[0m'
 log()  { echo -e "${GREEN}[Droidspaces]${NC} $*"; }
 warn() { echo -e "${YELLOW}[WARN]${NC} $*"; }
@@ -176,6 +181,7 @@ cp "$ROOT_DIR/config/droidspaces.config" "arch/$ARCH/configs/droidspaces.config"
 
 log "Generating base config ($DEFCONFIG)..."
 make O="$OUT_DIR" ARCH="$ARCH" \
+    "${HOST_MAKE_FLAGS[@]}" \
     CROSS_COMPILE="$CROSS_COMPILE" CROSS_COMPILE_ARM32="$CROSS_COMPILE_ARM32" \
     "$DEFCONFIG"
 
@@ -222,7 +228,7 @@ print("  fragment merged")
 PYEOF
 
 log "Running olddefconfig to resolve dependencies..."
-make O="$OUT_DIR" ARCH="$ARCH" olddefconfig
+make O="$OUT_DIR" ARCH="$ARCH" "${HOST_MAKE_FLAGS[@]}" olddefconfig
 
 log "Verifying required Droidspaces options..."
 python3 "$SCRIPT_DIR/verify_config.py" "$OUT_DIR/.config"
@@ -231,6 +237,7 @@ python3 "$SCRIPT_DIR/verify_config.py" "$OUT_DIR/.config"
 log "Building with $JOBS jobs (GCC 4.9)..."
 make -C "$KERNEL_DIR" O="$OUT_DIR" \
     ARCH="$ARCH" \
+    "${HOST_MAKE_FLAGS[@]}" \
     CROSS_COMPILE="$CROSS_COMPILE" \
     CROSS_COMPILE_ARM32="$CROSS_COMPILE_ARM32" \
     KCFLAGS="-Wno-error=unused-variable -Wno-error=unused-but-set-variable" \
