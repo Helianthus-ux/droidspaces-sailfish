@@ -29,6 +29,11 @@ OPTIONAL = [
     "CONFIG_CGROUP_FREEZER",
     "CONFIG_FAIR_GROUP_SCHED",
     "CONFIG_POSIX_MQUEUE",
+    # Guest disk support: fnOS/tcm_loop needs these two to build a storage pool
+    "CONFIG_BLK_DEV_MD",      # mdadm (fnOS always creates a single-disk md array)
+    "CONFIG_MD_RAID1",
+    "CONFIG_TCM_FILEIO",      # export an image file as a SCSI disk
+    "CONFIG_LOOPBACK_TARGET", # tcm_loop fabric
 ]
 
 
