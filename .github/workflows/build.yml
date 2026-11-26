@@ -1,0 +1,76 @@
+name: Build Droidspaces Kernel (Pixel 1 / sailfish)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main, master ]
+    paths:
+      - 'config/**'
+      - 'patches/**'
+      - 'scripts/**'
+      - 'anykernel/**'
+      - '.github/workflows/build.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout build scripts
+        uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential git bc bison flex libssl-dev libelf-dev \
+            python3 lz4 liblz4-tool wget curl xz-utils cpio zip \
+            libncurses5-dev lib32stdc++6 lib32z1
+
+      - name: Clone AnyKernel3 template
+        run: |
+          git clone --depth=1 https://github.com/osm0sis/AnyKernel3.git anykernel3
+
+      - name: Build kernel
+        run: |
+          chmod +x scripts/build.sh
+          ./scripts/build.sh 2>&1 | tee build.log
+
+      - name: Package AnyKernel3 flashable zip
+        run: |
+          IMAGE="out/arch/arm64/boot/Image.lz4-dtb"
+          test -f "$IMAGE" || { echo "kernel image missing"; exit 1; }
+          cp anykernel/anykernel.sh anykernel3/anykernel.sh
+          cp "$IMAGE" anykernel3/Image.lz4-dtb
+          cd anykernel3
+          zip -r9 ../Droidspaces-Pixel1-sailfish.zip . -x '*.git*' README.md
+          cd ..
+          echo "Zipped: $(du -h Droidspaces-Pixel1-sailfish.zip | cut -f1)"
+
+      - name: Upload flashable zip
+        uses: actions/upload-artifact@v4
+        with:
+          name: Droidspaces-Pixel1-sailfish-AnyKernel3
+          path: Droidspaces-Pixel1-sailfish.zip
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload bare kernel image
+        uses: actions/upload-artifact@v4
+        with:
+          name: Image.lz4-dtb
+          path: out/arch/arm64/boot/Image.lz4-dtb
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload build log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: build.log
+          if-no-files-found: ignore
